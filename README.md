@@ -64,7 +64,7 @@ Project ini membantu tim content/marketing untuk:
 ### 1) Clone & Install
 
 ```bash
-git clone https://github.com/yourusername/content-planner-backend.git
+git clone https://github.com/RianRahmanAlaziz/API-MyAppContentPlanner
 cd content-planner-backend
 composer install
 ```
