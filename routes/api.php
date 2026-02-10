@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContentCommentController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceMemberController;
@@ -35,4 +36,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/contents/{content}/move', [ContentController::class, 'move']);       // kanban
     Route::patch('/contents/{content}/schedule', [ContentController::class, 'schedule']); // calendar
 
+    Route::get('/contents/{content}/comments', [ContentCommentController::class, 'index']);
+    Route::post('/contents/{content}/comments', [ContentCommentController::class, 'store']);
 });
