@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContentController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceMemberController;
 use Illuminate\Http\Request;
@@ -23,4 +24,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/workspaces/{workspace}/members', [WorkspaceMemberController::class, 'store']); // add by email
     Route::patch('/workspaces/{workspace}/members/{user}', [WorkspaceMemberController::class, 'updateRole']);
     Route::delete('/workspaces/{workspace}/members/{user}', [WorkspaceMemberController::class, 'destroy']);
+
+    Route::get('/workspaces/{workspace}/contents', [ContentController::class, 'index']);
+    Route::post('/workspaces/{workspace}/contents', [ContentController::class, 'store']);
+
+    Route::get('/contents/{content}', [ContentController::class, 'show']);
+    Route::patch('/contents/{content}', [ContentController::class, 'update']);
+    Route::delete('/contents/{content}', [ContentController::class, 'destroy']);
+
+    Route::patch('/contents/{content}/move', [ContentController::class, 'move']);       // kanban
+    Route::patch('/contents/{content}/schedule', [ContentController::class, 'schedule']); // calendar
+
 });
