@@ -1,59 +1,306 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🚀 Content Planner Backend (Laravel 12)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend REST API untuk aplikasi **Content Planner** (Instagram, TikTok, YouTube) berbasis **Workspace & Team Collaboration**.
 
-## About Laravel
+Project ini membantu tim content/marketing untuk:
+- menyusun ide konten
+- mengatur workflow (kanban)
+- menjadwalkan posting
+- review & approval
+- checklist produksi
+- komentar internal tim
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## ✨ Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Authentication (Laravel Sanctum Token)
+- Workspace / Team Management
+- Role-based Access Control: **Owner / Editor / Reviewer / Viewer**
+- **Admin Super User** (akses semua workspace & endpoint)
+- Content CRUD (Create, Read, Update, Delete)
+- Kanban Workflow:  
+  `idea → brief → production → review → scheduled → published`
+- Scheduling (Calendar-ready)
+- Comments
+- Checklist Items
+- Approvals (approve / request changes)
+- Standard Error Response Format (API-friendly)
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 🧩 Tech Stack
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **Laravel 12**
+- **Laravel Sanctum** (API Token)
+- **MySQL / MariaDB**
+- **Policy Authorization**
+- **OpenAPI Documentation** (Swagger-ready)
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 👤 Roles & Permissions
 
-### Premium Partners
+### Global Role (`users.role`)
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Role  | Hak |
+|------|-----|
+| admin | Akses penuh semua workspace & endpoint |
+| user  | Akses tergantung role di workspace |
 
-## Contributing
+### Workspace Role (`workspace_members.role`)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Role     | Hak |
+|----------|-----|
+| owner    | Full akses (manage members, content, approval) |
+| editor   | Create / update content, checklist, comments |
+| reviewer | Comment + approve / request changes |
+| viewer   | Read-only |
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## ⚙️ Installation
 
-## Security Vulnerabilities
+### 1) Clone & Install
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+git clone https://github.com/yourusername/content-planner-backend.git
+cd content-planner-backend
+composer install
+```
 
-## License
+### 2) Setup Environment (.env)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Edit file `.env` sesuai database kamu:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=content_planner
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 3) Run Migration & Server
+
+```bash
+php artisan migrate
+php artisan serve
+```
+
+Server berjalan di:
+
+```
+http://127.0.0.1:8000
+```
+
+---
+
+## 🔑 Authentication (Sanctum Token)
+
+Semua endpoint API membutuhkan token Bearer.
+
+Gunakan header berikut:
+
+```
+Authorization: Bearer <token>
+Accept: application/json
+```
+
+---
+
+## 🔐 Login Example
+
+Request:
+
+**POST** `/api/auth/login`
+
+```json
+{
+  "email": "admin@mail.com",
+  "password": "admin"
+}
+```
+
+Response:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "admin",
+    "email": "admin@mail.com",
+    "role": "admin"
+  },
+  "token": "1|xxxxxxxxxxxx"
+}
+```
+
+---
+
+## 📦 API Endpoints
+
+### Auth
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET  /api/me`
+
+### Workspaces
+- `GET  /api/workspaces`
+- `POST /api/workspaces`
+- `GET  /api/workspaces/{id}`
+
+### Workspace Members
+- `GET    /api/workspaces/{id}/members`
+- `POST   /api/workspaces/{id}/members`
+- `PATCH  /api/workspaces/{id}/members/{userId}`
+- `DELETE /api/workspaces/{id}/members/{userId}`
+
+### Contents
+- `GET    /api/workspaces/{id}/contents`
+- `POST   /api/workspaces/{id}/contents`
+- `GET    /api/contents/{id}`
+- `PATCH  /api/contents/{id}`
+- `DELETE /api/contents/{id}`
+- `PATCH  /api/contents/{id}/move`
+- `PATCH  /api/contents/{id}/schedule`
+
+### Comments
+- `GET  /api/contents/{id}/comments`
+- `POST /api/contents/{id}/comments`
+
+### Checklist
+- `GET    /api/contents/{id}/checklist`
+- `POST   /api/contents/{id}/checklist`
+- `PATCH  /api/checklist-items/{id}`
+- `DELETE /api/checklist-items/{id}`
+
+### Approvals
+- `GET  /api/contents/{id}/approvals`
+- `POST /api/contents/{id}/approve`
+- `POST /api/contents/{id}/request-changes`
+
+---
+
+## 🔍 Filtering & Searching Contents
+
+Endpoint:
+
+```
+GET /api/workspaces/{workspaceId}/contents
+```
+
+Query params:
+
+| Param | Example | Description |
+|------|---------|-------------|
+| status | status=review | filter by workflow status |
+| platform | platform=ig | filter by platform |
+| assignee_id | assignee_id=2 | filter by assignee |
+| q | q=edukasi | search title/hook/caption |
+| from | 2026-02-01 00:00:00 | scheduled_at >= from |
+| to | 2026-02-28 23:59:59 | scheduled_at <= to |
+| page | page=1 | pagination |
+
+Example:
+
+```
+GET /api/workspaces/3/contents?status=scheduled&from=2026-02-01 00:00:00&to=2026-02-28 23:59:59
+```
+
+---
+
+## 🧱 Standard Error Format
+
+### Validation Error (422)
+
+```json
+{
+  "success": false,
+  "message": "Validation failed",
+  "error": {
+    "type": "validation_error",
+    "details": {
+      "title": [
+        "The title field is required."
+      ]
+    }
+  }
+}
+```
+
+### Forbidden (403)
+
+```json
+{
+  "success": false,
+  "message": "Forbidden",
+  "error": {
+    "type": "forbidden"
+  }
+}
+```
+
+### Not Found (404)
+
+```json
+{
+  "success": false,
+  "message": "Not found",
+  "error": {
+    "type": "not_found"
+  }
+}
+```
+
+---
+
+## 📖 API Documentation (OpenAPI / Swagger)
+
+Dokumentasi OpenAPI tersedia dalam file:
+
+```
+openapi.yaml
+```
+
+Run Swagger UI (Docker):
+
+```bash
+docker run -p 8080:8080 \
+  -e SWAGGER_JSON=/foo/openapi.yaml \
+  -v $(pwd)/openapi.yaml:/foo/openapi.yaml \
+  swaggerapi/swagger-ui
+```
+
+Lalu buka:
+
+```
+http://localhost:8080
+```
+
+---
+
+
+## 📌 Project Status
+
+🚧 MVP (In Progress)
+
+Planned:
+- Notifications
+- Activity Logs
+- Media Upload
+- Analytics Report
+
+---
+
+## ✨ Author
+
+Developed by **RianRahmanAlaziz**  
+Backend: Laravel 12 

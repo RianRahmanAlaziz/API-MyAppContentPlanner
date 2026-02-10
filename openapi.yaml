@@ -1,0 +1,1056 @@
+openapi: 3.0.3
+info:
+  title: Content Planner API
+  version: 1.0.0
+  description: |
+    Team-based content planning API for Instagram, TikTok, and YouTube.
+    Backend: Laravel. Frontend: Next.js.
+servers:
+  - url: http://127.0.0.1:8000/api
+
+tags:
+  - name: Auth
+  - name: Workspaces
+  - name: Members
+  - name: Contents
+  - name: Comments
+  - name: Checklist
+  - name: Approvals
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              example: validation_error
+            details:
+              nullable: true
+              oneOf:
+                - type: object
+                - type: string
+      required: [success, message, error]
+
+    User:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: Jerjii }
+        email: { type: string, example: jerjii@mail.com }
+        role:
+          type: string
+          description: Global role
+          enum: [user, admin]
+          example: user
+      required: [id, name, email, role]
+
+    Workspace:
+      type: object
+      properties:
+        id: { type: integer, example: 3 }
+        name: { type: string, example: Brand A }
+        slug: { type: string, example: brand-a-x7k9p2 }
+        owner_id: { type: integer, example: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      required: [id, name, slug, owner_id]
+
+    WorkspaceMember:
+      type: object
+      properties:
+        user_id: { type: integer, example: 2 }
+        role:
+          type: string
+          enum: [owner, editor, reviewer, viewer]
+          example: editor
+        user:
+          $ref: "#/components/schemas/User"
+      required: [user_id, role]
+
+    Content:
+      type: object
+      properties:
+        id: { type: integer, example: 10 }
+        workspace_id: { type: integer, example: 3 }
+        platform:
+          type: string
+          enum: [ig, tiktok, youtube]
+          example: ig
+        content_type:
+          type: string
+          example: reel
+        title:
+          type: string
+          example: Ide konten edukasi
+        hook:
+          type: string
+          nullable: true
+          example: Kamu sering salah di bagian ini!
+        script:
+          type: string
+          nullable: true
+        caption:
+          type: string
+          nullable: true
+        hashtags:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [idea, brief, production, review, scheduled, published]
+          example: idea
+        priority:
+          type: string
+          enum: [low, med, high]
+          example: med
+        tags:
+          type: array
+          items: { type: string }
+          example: ["edukasi", "tips"]
+        assignee:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/User"
+        creator:
+          $ref: "#/components/schemas/User"
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        comments:
+          type: array
+          items: { $ref: "#/components/schemas/ContentComment" }
+        checklist_items:
+          type: array
+          items: { $ref: "#/components/schemas/ChecklistItem" }
+        approvals:
+          type: array
+          items: { $ref: "#/components/schemas/Approval" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      required:
+        [id, workspace_id, platform, content_type, title, status, priority]
+
+    ContentComment:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        message: { type: string, example: "Tolong revisi CTA ya." }
+        user: { $ref: "#/components/schemas/User" }
+        created_at: { type: string, format: date-time }
+      required: [id, message, user, created_at]
+
+    ChecklistItem:
+      type: object
+      properties:
+        id: { type: integer, example: 7 }
+        label: { type: string, example: "Script selesai" }
+        is_done: { type: boolean, example: false }
+        sort_order: { type: integer, example: 1 }
+        created_at: { type: string, format: date-time }
+      required: [id, label, is_done, sort_order]
+
+    Approval:
+      type: object
+      properties:
+        id: { type: integer, example: 2 }
+        status:
+          type: string
+          enum: [approved, changes_requested]
+          example: approved
+        note:
+          type: string
+          nullable: true
+          example: "Approved, siap publish."
+        reviewer:
+          $ref: "#/components/schemas/User"
+        created_at: { type: string, format: date-time }
+      required: [id, status, reviewer, created_at]
+
+    PaginationLinks:
+      type: object
+      additionalProperties: true
+      description: Laravel paginator links object
+
+    PaginationMeta:
+      type: object
+      additionalProperties: true
+      description: Laravel paginator meta object
+
+    PaginatedContents:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Content" }
+        links: { $ref: "#/components/schemas/PaginationLinks" }
+        meta: { $ref: "#/components/schemas/PaginationMeta" }
+      required: [data]
+
+  responses:
+    Unauthorized:
+      description: Unauthenticated
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Validation:
+      description: Validation Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string, example: Jerjii }
+                email: { type: string, example: jerjii@mail.com }
+                password: { type: string, example: password123 }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+                  token: { type: string }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: jerjii@mail.com }
+                password: { type: string, example: password123 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+                  token: { type: string }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (revoke current token)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: Logged out }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /workspaces:
+    get:
+      tags: [Workspaces]
+      summary: List workspaces where user is a member (admin sees all if you implement it that way)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Workspace" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Workspaces]
+      summary: Create workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, example: Brand A }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Workspace" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /workspaces/{workspaceId}:
+    get:
+      tags: [Workspaces]
+      summary: Workspace detail (owner + members)
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/Workspace"
+                      - type: object
+                        properties:
+                          owner: { $ref: "#/components/schemas/User" }
+                          members:
+                            type: array
+                            items:
+                              { $ref: "#/components/schemas/WorkspaceMember" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /workspaces/{workspaceId}/members:
+    get:
+      tags: [Members]
+      summary: List workspace members
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/WorkspaceMember" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Members]
+      summary: Add member by email (email must already exist)
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, example: editor@mail.com }
+                role:
+                  {
+                    type: string,
+                    enum: [editor, reviewer, viewer],
+                    example: editor,
+                  }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: Member added }
+                  data:
+                    type: object
+                    properties:
+                      user_id: { type: integer, example: 2 }
+                      role: { type: string, example: editor }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Conflict (already a member)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /workspaces/{workspaceId}/members/{userId}:
+    patch:
+      tags: [Members]
+      summary: Update member role
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: userId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  {
+                    type: string,
+                    enum: [editor, reviewer, viewer],
+                    example: reviewer,
+                  }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: Role updated }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+    delete:
+      tags: [Members]
+      summary: Remove member
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: userId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: Member removed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /workspaces/{workspaceId}/contents:
+    get:
+      tags: [Contents]
+      summary: List contents (supports filters + pagination)
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: status
+          schema:
+            {
+              type: string,
+              enum: [idea, brief, production, review, scheduled, published],
+            }
+        - in: query
+          name: platform
+          schema: { type: string, enum: [ig, tiktok, youtube] }
+        - in: query
+          name: assignee_id
+          schema: { type: integer }
+        - in: query
+          name: from
+          description: scheduled_at >= from (use YYYY-MM-DD HH:mm:ss)
+          schema: { type: string }
+        - in: query
+          name: to
+          description: scheduled_at <= to (use YYYY-MM-DD HH:mm:ss)
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, example: 1 }
+      responses:
+        "200":
+          description: OK (paginated)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginatedContents" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Contents]
+      summary: Create content
+      parameters:
+        - in: path
+          name: workspaceId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, content_type, title, status]
+              properties:
+                platform: { type: string, enum: [ig, tiktok, youtube] }
+                content_type: { type: string, example: reel }
+                title: { type: string, example: Ide konten 1 }
+                hook: { type: string, nullable: true }
+                script: { type: string, nullable: true }
+                caption: { type: string, nullable: true }
+                hashtags: { type: string, nullable: true }
+                status:
+                  {
+                    type: string,
+                    enum:
+                      [idea, brief, production, review, scheduled, published],
+                  }
+                assignee_id: { type: integer, nullable: true }
+                due_at:
+                  {
+                    type: string,
+                    nullable: true,
+                    example: "2026-02-15 18:00:00",
+                  }
+                scheduled_at: { type: string, nullable: true }
+                published_at: { type: string, nullable: true }
+                priority:
+                  { type: string, enum: [low, med, high], nullable: true }
+                tags:
+                  type: array
+                  nullable: true
+                  items: { type: string }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Content" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /contents/{contentId}:
+    get:
+      tags: [Contents]
+      summary: Content detail (includes comments, checklist_items, approvals)
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Content" }
+                  meta:
+                    type: object
+                    properties:
+                      workspace:
+                        type: object
+                        properties:
+                          id: { type: integer }
+                          name: { type: string }
+                          slug: { type: string }
+                      my_role:
+                        type: string
+                        enum: [owner, editor, reviewer, viewer]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Contents]
+      summary: Update content
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platform: { type: string, enum: [ig, tiktok, youtube] }
+                content_type: { type: string }
+                title: { type: string }
+                hook: { type: string, nullable: true }
+                script: { type: string, nullable: true }
+                caption: { type: string, nullable: true }
+                hashtags: { type: string, nullable: true }
+                status:
+                  {
+                    type: string,
+                    enum:
+                      [idea, brief, production, review, scheduled, published],
+                  }
+                assignee_id: { type: integer, nullable: true }
+                due_at: { type: string, nullable: true }
+                scheduled_at: { type: string, nullable: true }
+                published_at: { type: string, nullable: true }
+                priority:
+                  { type: string, enum: [low, med, high], nullable: true }
+                tags:
+                  type: array
+                  nullable: true
+                  items: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Content" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+    delete:
+      tags: [Contents]
+      summary: Delete content
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /contents/{contentId}/move:
+    patch:
+      tags: [Contents]
+      summary: Move content status (Kanban)
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  {
+                    type: string,
+                    enum:
+                      [idea, brief, production, review, scheduled, published],
+                  }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Content" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /contents/{contentId}/schedule:
+    patch:
+      tags: [Contents]
+      summary: Set scheduled_at and set status=scheduled
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduled_at]
+              properties:
+                scheduled_at: { type: string, example: "2026-02-15 19:00:00" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Content" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /contents/{contentId}/comments:
+    get:
+      tags: [Comments]
+      summary: List comments
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ContentComment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Comments]
+      summary: Create comment
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, example: "Tolong revisi CTA ya." }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/ContentComment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /contents/{contentId}/checklist:
+    get:
+      tags: [Checklist]
+      summary: List checklist items
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ChecklistItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Checklist]
+      summary: Add checklist item
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label]
+              properties:
+                label: { type: string, example: Script selesai }
+                sort_order: { type: integer, nullable: true }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/ChecklistItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /checklist-items/{itemId}:
+    patch:
+      tags: [Checklist]
+      summary: Update checklist item (toggle/rename/reorder)
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string }
+                is_done: { type: boolean }
+                sort_order: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/ChecklistItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+    delete:
+      tags: [Checklist]
+      summary: Delete checklist item
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /contents/{contentId}/approvals:
+    get:
+      tags: [Approvals]
+      summary: List approvals
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Approval" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /contents/{contentId}/approve:
+    post:
+      tags: [Approvals]
+      summary: Approve content (reviewer/owner/admin)
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Approval" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /contents/{contentId}/request-changes:
+    post:
+      tags: [Approvals]
+      summary: Request changes (reviewer/owner/admin)
+      parameters:
+        - in: path
+          name: contentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note:
+                  { type: string, example: Hook kurang kuat, revisi opening. }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Approval" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
