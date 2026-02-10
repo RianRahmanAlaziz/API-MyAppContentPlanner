@@ -10,38 +10,10 @@ use Illuminate\Http\Request;
 
 class ContentApprovalController extends Controller
 {
-    private function getWorkspace(Content $content): Workspace
-    {
-        return Workspace::findOrFail($content->workspace_id);
-    }
-
-    private function ensureMember(Request $request, Workspace $workspace): void
-    {
-        $isMember = $workspace->members()
-            ->where('user_id', $request->user()->id)
-            ->exists();
-
-        abort_unless($isMember, 403);
-    }
-
-    private function ensureReviewerOrOwner(Request $request, Workspace $workspace): void
-    {
-        $member = $workspace->members()
-            ->where('user_id', $request->user()->id)
-            ->first();
-
-        abort_unless($member, 403);
-
-        $role = $member->role;
-
-        // owner boleh approve juga
-        abort_unless(in_array($role, ['reviewer', 'owner'], true), 403);
-    }
 
     public function index(Request $request, Content $content)
     {
-        $workspace = $this->getWorkspace($content);
-        $this->ensureMember($request, $workspace);
+        $this->authorize('view', $content);
 
         $items = ContentApproval::query()
             ->where('content_id', $content->id)
@@ -54,8 +26,7 @@ class ContentApprovalController extends Controller
 
     public function approve(Request $request, Content $content)
     {
-        $workspace = $this->getWorkspace($content);
-        $this->ensureReviewerOrOwner($request, $workspace);
+        $this->authorize('approve', $content);
 
         $data = $request->validate([
             'note' => ['nullable', 'string', 'max:2000'],
@@ -82,8 +53,7 @@ class ContentApprovalController extends Controller
 
     public function requestChanges(Request $request, Content $content)
     {
-        $workspace = $this->getWorkspace($content);
-        $this->ensureReviewerOrOwner($request, $workspace);
+        $this->authorize('approve', $content);
 
         $data = $request->validate([
             'note' => ['required', 'string', 'max:2000'],

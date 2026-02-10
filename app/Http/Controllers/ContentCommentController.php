@@ -10,20 +10,10 @@ use Illuminate\Http\Request;
 
 class ContentCommentController extends Controller
 {
-    private function ensureMember(Request $request, Content $content): void
-    {
-        $workspace = Workspace::findOrFail($content->workspace_id);
-
-        $isMember = $workspace->members()
-            ->where('user_id', $request->user()->id)
-            ->exists();
-
-        abort_unless($isMember, 403);
-    }
 
     public function index(Request $request, Content $content)
     {
-        $this->ensureMember($request, $content);
+        $this->authorize('view', $content);
 
         $comments = ContentComment::query()
             ->where('content_id', $content->id)
@@ -36,7 +26,7 @@ class ContentCommentController extends Controller
 
     public function store(Request $request, Content $content)
     {
-        $this->ensureMember($request, $content);
+        $this->authorize('comment', $content);
 
         $data = $request->validate([
             'message' => ['required', 'string', 'max:2000'],

@@ -27,4 +27,20 @@ class Workspace extends Model
     {
         return $this->members()->where('user_id', $userId)->value('role');
     }
+
+    public function roleFor(int $userId): ?string
+    {
+        return $this->members()->where('user_id', $userId)->value('role');
+    }
+
+    public function hasRole(int $userId, array $roles): bool
+    {
+        $role = $this->roleFor($userId);
+        return $role !== null && in_array($role, $roles, true);
+    }
+
+    public function isMember(int $userId): bool
+    {
+        return $this->members()->where('user_id', $userId)->exists();
+    }
 }

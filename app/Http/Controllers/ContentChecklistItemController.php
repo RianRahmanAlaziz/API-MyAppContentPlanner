@@ -10,27 +10,10 @@ use Illuminate\Http\Request;
 
 class ContentChecklistItemController extends Controller
 {
-    private function ensureMember(Request $request, Content $content): void
-    {
-        $workspace = Workspace::findOrFail($content->workspace_id);
-
-        $isMember = $workspace->members()
-            ->where('user_id', $request->user()->id)
-            ->exists();
-
-        abort_unless($isMember, 403);
-    }
-
-    private function ensureMemberByItem(Request $request, ContentChecklistItem $item): Content
-    {
-        $content = Content::findOrFail($item->content_id);
-        $this->ensureMember($request, $content);
-        return $content;
-    }
 
     public function index(Request $request, Content $content)
     {
-        $this->ensureMember($request, $content);
+        $this->authorize('view', $content);
 
         $items = ContentChecklistItem::query()
             ->where('content_id', $content->id)
@@ -43,7 +26,7 @@ class ContentChecklistItemController extends Controller
 
     public function store(Request $request, Content $content)
     {
-        $this->ensureMember($request, $content);
+        $this->authorize('checklist', $content);
 
         $data = $request->validate([
             'label' => ['required', 'string', 'max:120'],
@@ -65,7 +48,8 @@ class ContentChecklistItemController extends Controller
 
     public function update(Request $request, ContentChecklistItem $item)
     {
-        $this->ensureMemberByItem($request, $item);
+        $content = Content::findOrFail($item->content_id);
+        $this->authorize('checklist', $content);
 
         $data = $request->validate([
             'label' => ['sometimes', 'string', 'max:120'],
@@ -80,7 +64,8 @@ class ContentChecklistItemController extends Controller
 
     public function destroy(Request $request, ContentChecklistItem $item)
     {
-        $this->ensureMemberByItem($request, $item);
+        $content = Content::findOrFail($item->content_id);
+        $this->authorize('checklist', $content);
 
         $item->delete();
 

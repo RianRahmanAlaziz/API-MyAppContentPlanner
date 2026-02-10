@@ -17,9 +17,7 @@ class WorkspaceMemberController extends Controller
 
     public function index(Request $request, Workspace $workspace)
     {
-        // hanya member yang boleh lihat daftar member
-        $isMember = $workspace->members()->where('user_id', $request->user()->id)->exists();
-        abort_unless($isMember, 403);
+        $this->authorize('view', $workspace);
 
         $members = $workspace->members()
             ->with('user:id,name,email')
@@ -39,7 +37,8 @@ class WorkspaceMemberController extends Controller
 
     public function store(Request $request, Workspace $workspace)
     {
-        $this->ensureOwner($request, $workspace);
+        $this->authorize('manageMembers', $workspace);
+
 
         $data = $request->validate([
             'email' => ['required', 'email'],
@@ -72,7 +71,7 @@ class WorkspaceMemberController extends Controller
 
     public function updateRole(Request $request, Workspace $workspace, User $user)
     {
-        $this->ensureOwner($request, $workspace);
+        $this->authorize('manageMembers', $workspace);
 
         $data = $request->validate([
             'role' => ['required', 'in:owner,editor,reviewer,viewer'],
@@ -97,8 +96,7 @@ class WorkspaceMemberController extends Controller
 
     public function destroy(Request $request, Workspace $workspace, User $user)
     {
-        $this->ensureOwner($request, $workspace);
-
+        $this->authorize('manageMembers', $workspace);
         // tidak boleh remove owner
         abort_if($user->id === $workspace->owner_id, 422, 'Tidak bisa menghapus owner dari workspace.');
 

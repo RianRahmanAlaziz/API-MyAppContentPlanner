@@ -9,22 +9,10 @@ use Illuminate\Http\Request;
 
 class ContentController extends Controller
 {
-    private function ensureMember(Request $request, Workspace $workspace): void
-    {
-        $isMember = $workspace->members()->where('user_id', $request->user()->id)->exists();
-        abort_unless($isMember, 403);
-    }
-
-    private function ensureContentMember(Request $request, Content $content): Workspace
-    {
-        $workspace = Workspace::findOrFail($content->workspace_id);
-        $this->ensureMember($request, $workspace);
-        return $workspace;
-    }
 
     public function index(Request $request, Workspace $workspace)
     {
-        $this->ensureMember($request, $workspace);
+        $this->authorize('view', $workspace);
 
         $q = Content::query()->where('workspace_id', $workspace->id);
 
@@ -56,7 +44,8 @@ class ContentController extends Controller
 
     public function store(Request $request, Workspace $workspace)
     {
-        $this->ensureMember($request, $workspace);
+        $this->authorize('create', [Content::class, $workspace]);
+
 
         $data = $request->validate([
             'platform' => ['required', 'in:ig,tiktok,youtube'],
@@ -87,7 +76,8 @@ class ContentController extends Controller
 
     public function show(Request $request, Content $content)
     {
-        $workspace = $this->ensureContentMember($request, $content);
+        $this->authorize('view', $content);
+
 
         $content->load([
             'assignee:id,name,email',
@@ -96,6 +86,8 @@ class ContentController extends Controller
             'checklistItems',
             'approvals.reviewer:id,name,email',
         ]);
+
+        $workspace = Workspace::findOrFail($content->workspace_id);
 
         // Optional: info workspace + role user saat ini (berguna untuk FE)
         $myRole = $workspace->members()
@@ -118,7 +110,7 @@ class ContentController extends Controller
 
     public function update(Request $request, Content $content)
     {
-        $this->ensureContentMember($request, $content);
+        $this->authorize('update', $content);
 
         $data = $request->validate([
             'platform' => ['sometimes', 'in:ig,tiktok,youtube'],
@@ -145,7 +137,7 @@ class ContentController extends Controller
 
     public function destroy(Request $request, Content $content)
     {
-        $this->ensureContentMember($request, $content);
+        $this->authorize('delete', $content);
 
         $content->delete();
 
@@ -154,8 +146,7 @@ class ContentController extends Controller
 
     public function move(Request $request, Content $content)
     {
-        $this->ensureContentMember($request, $content);
-
+        $this->authorize('update', $content);
         $data = $request->validate([
             'status' => ['required', 'in:idea,brief,production,review,scheduled,published'],
         ]);
@@ -173,7 +164,7 @@ class ContentController extends Controller
 
     public function schedule(Request $request, Content $content)
     {
-        $this->ensureContentMember($request, $content);
+        $this->authorize('update', $content);
 
         $data = $request->validate([
             'scheduled_at' => ['required', 'date'],
