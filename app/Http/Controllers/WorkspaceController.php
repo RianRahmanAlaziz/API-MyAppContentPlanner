@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\WorkspaceResource;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Illuminate\Http\Request;
@@ -18,7 +19,9 @@ class WorkspaceController extends Controller
             ->orderBy('name')
             ->get();
 
-        return response()->json(['data' => $workspaces]);
+        return response()->json([
+            'data' => WorkspaceResource::collection($workspaces),
+        ]);
     }
 
     public function store(Request $request)

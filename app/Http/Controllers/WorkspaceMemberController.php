@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\WorkspaceMemberResource;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -10,29 +11,18 @@ use Illuminate\Http\Request;
 
 class WorkspaceMemberController extends Controller
 {
-    private function ensureOwner(Request $request, Workspace $workspace): void
-    {
-        abort_unless($workspace->isOwner($request->user()->id), 403);
-    }
-
     public function index(Request $request, Workspace $workspace)
     {
         $this->authorize('view', $workspace);
 
         $members = $workspace->members()
-            ->with('user:id,name,email')
+            ->with('user:id,name,email,role')
             ->orderBy('role')
-            ->get()
-            ->map(function ($m) {
-                return [
-                    'user_id' => $m->user_id,
-                    'name' => $m->user->name,
-                    'email' => $m->user->email,
-                    'role' => $m->role,
-                ];
-            });
+            ->get();
 
-        return response()->json(['data' => $members]);
+        return response()->json([
+            'data' => WorkspaceMemberResource::collection($members),
+        ]);
     }
 
     public function store(Request $request, Workspace $workspace)

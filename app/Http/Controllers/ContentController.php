@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ContentResource;
 use App\Models\Content;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
@@ -39,7 +40,7 @@ class ContentController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return response()->json($items);
+        return ContentResource::collection($items);
     }
 
     public function store(Request $request, Workspace $workspace)
@@ -71,7 +72,9 @@ class ContentController extends Controller
 
         $content = Content::create($data);
 
-        return response()->json(['data' => $content], 201);
+        return response()->json([
+            'data' => new ContentResource($content),
+        ], 201);
     }
 
     public function show(Request $request, Content $content)
@@ -95,7 +98,7 @@ class ContentController extends Controller
             ->value('role');
 
         return response()->json([
-            'data' => $content,
+            'data' => new ContentResource($content),
             'meta' => [
                 'workspace' => [
                     'id' => $workspace->id,
@@ -132,7 +135,9 @@ class ContentController extends Controller
 
         $content->update($data);
 
-        return response()->json(['data' => $content]);
+        return response()->json([
+            'data' => new ContentResource($content),
+        ]);
     }
 
     public function destroy(Request $request, Content $content)
