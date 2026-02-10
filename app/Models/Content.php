@@ -51,4 +51,14 @@ class Content extends Model
     {
         return $this->hasMany(ContentComment::class);
     }
+
+    public function checklistItems()
+    {
+        return $this->hasMany(ContentChecklistItem::class)->orderBy('sort_order');
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(ContentApproval::class)->orderByDesc('created_at');
+    }
 }

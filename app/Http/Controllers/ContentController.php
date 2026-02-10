@@ -87,12 +87,34 @@ class ContentController extends Controller
 
     public function show(Request $request, Content $content)
     {
-        $this->ensureContentMember($request, $content);
+        $workspace = $this->ensureContentMember($request, $content);
 
-        $content->load(['assignee:id,name,email', 'creator:id,name,email']);
+        $content->load([
+            'assignee:id,name,email',
+            'creator:id,name,email',
+            'comments.user:id,name,email',
+            'checklistItems',
+            'approvals.reviewer:id,name,email',
+        ]);
 
-        return response()->json(['data' => $content]);
+        // Optional: info workspace + role user saat ini (berguna untuk FE)
+        $myRole = $workspace->members()
+            ->where('user_id', $request->user()->id)
+            ->value('role');
+
+        return response()->json([
+            'data' => $content,
+            'meta' => [
+                'workspace' => [
+                    'id' => $workspace->id,
+                    'name' => $workspace->name,
+                    'slug' => $workspace->slug,
+                ],
+                'my_role' => $myRole,
+            ],
+        ]);
     }
+
 
     public function update(Request $request, Content $content)
     {

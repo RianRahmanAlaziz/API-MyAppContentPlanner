@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ContentApprovalController;
+use App\Http\Controllers\ContentChecklistItemController;
 use App\Http\Controllers\ContentCommentController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\WorkspaceController;
@@ -38,4 +40,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/contents/{content}/comments', [ContentCommentController::class, 'index']);
     Route::post('/contents/{content}/comments', [ContentCommentController::class, 'store']);
+
+    Route::get('/contents/{content}/checklist', [ContentChecklistItemController::class, 'index']);
+    Route::post('/contents/{content}/checklist', [ContentChecklistItemController::class, 'store']);
+
+    Route::patch('/checklist-items/{item}', [ContentChecklistItemController::class, 'update']);
+    Route::delete('/checklist-items/{item}', [ContentChecklistItemController::class, 'destroy']);
+
+    Route::get('/contents/{content}/approvals', [ContentApprovalController::class, 'index']);
+    Route::post('/contents/{content}/approve', [ContentApprovalController::class, 'approve']);
+    Route::post('/contents/{content}/request-changes', [ContentApprovalController::class, 'requestChanges']);
 });
