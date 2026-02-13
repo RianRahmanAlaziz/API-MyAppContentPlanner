@@ -10,6 +10,23 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function index(Request $request)
+    {
+        $query = User::query();
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where('name', 'like', "%{$search}%");
+        }
+        $users = $query->paginate(10);
+
+        return response()->json([
+            'message' => 'Data semua user berhasil diambil',
+            'data' => $users->appends([
+                'search' => $request->input('search'),
+            ]),
+        ], 200);
+    }
+
     public function register(Request $request)
     {
         $data = $request->validate([
