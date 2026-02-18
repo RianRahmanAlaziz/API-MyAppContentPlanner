@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 
 class WorkspaceMemberController extends Controller
 {
+
+
     public function index(Request $request, Workspace $workspace)
     {
         $this->authorize('view', $workspace);

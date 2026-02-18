@@ -56,7 +56,7 @@ class ContentController extends Controller
             'script' => ['nullable', 'string'],
             'caption' => ['nullable', 'string'],
             'hashtags' => ['nullable', 'string'],
-            'status' => ['required', 'in:idea,brief,production,review,scheduled,published'],
+            'status' => ['required', 'in:idea,production,review,scheduled,published'],
             'assignee_id' => ['nullable', 'integer', 'exists:users,id'],
             'due_at' => ['nullable', 'date'],
             'scheduled_at' => ['nullable', 'date'],
