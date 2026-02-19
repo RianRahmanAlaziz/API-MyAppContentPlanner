@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentApprovalController;
 use App\Http\Controllers\ContentChecklistItemController;
 use App\Http\Controllers\ContentCommentController;
 use App\Http\Controllers\ContentController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceMemberController;
 use Illuminate\Http\Request;
@@ -16,18 +16,23 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+
     /*
     | User
     */
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-    Route::prefix('users')->controller(UserController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::put('{id}', 'update');
-        Route::delete('{id}', 'destroy');
+    Route::prefix('admin')->middleware('admin')->group(function () {
+        Route::prefix('users')->controller(AdminUserController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::put('{id}', 'update');
+            Route::delete('{id}', 'destroy');
+        });
     });
+
+
 
     /*
     | Workspaces
