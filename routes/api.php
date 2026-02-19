@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminWorkspaceController;
+use App\Http\Controllers\Admin\AdminWorkspaceMemberController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentApprovalController;
 use App\Http\Controllers\ContentChecklistItemController;
@@ -24,18 +25,38 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
+
+    /*
+    | Admin
+    */
     Route::prefix('admin')->middleware('admin')->group(function () {
+        /*
+        | User
+        */
         Route::prefix('users')->controller(AdminUserController::class)->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
             Route::put('{id}', 'update');
             Route::delete('{id}', 'destroy');
         });
+        /*
+        | Workspace
+        */
         Route::prefix('workspace')->controller(AdminWorkspaceController::class)->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
             Route::put('{id}', 'update');
             Route::delete('{id}', 'destroy');
+        });
+        /*
+        | Workspace Member
+        */
+        Route::prefix('workspace')->controller(AdminWorkspaceMemberController::class)->group(function () {
+            Route::get('/{workspace}/members', 'index');
+            Route::post('/{workspace}/members', 'store');
+            Route::put('{workspace}/members/{user}', 'update');
+            Route::delete('{workspace}/members/{user}', 'destroy');
+            Route::post('/{workspace}/transfer-owner', 'transferOwner');
         });
     });
 

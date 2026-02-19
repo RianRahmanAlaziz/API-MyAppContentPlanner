@@ -13,21 +13,12 @@ class WorkspaceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Workspace::with('owner');
+        $workspaces = Workspace::query()
+            ->whereHas('members', fn($q) => $q->where('user_id', $request->user()->id))
+            ->orderBy('name')
+            ->get();
 
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        $workspace = $query->paginate(10);
-
-        return response()->json([
-            'message' => 'Data semua Workspace berhasil diambil',
-            'data' => $workspace->appends([
-                'search' => $request->input('search'),
-            ]),
-        ], 200);
+        return response()->json(['data' => $workspaces]);
     }
 
     public function store(Request $request)
@@ -62,31 +53,5 @@ class WorkspaceController extends Controller
         $workspace->load(['owner:id,name,email', 'members.user:id,name,email']);
 
         return response()->json(['data' => $workspace]);
-    }
-
-    public function destroy($id)
-    {
-        $workspace = Workspace::find($id);
-
-        try {
-            if (!$workspace) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data Workspace tidak ditemukan.'
-                ], 404);
-            }
-
-            $workspace->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data Workspace berhasil dihapus.'
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghapus Data Workspace. Silakan coba lagi.'
-            ], 500);
-        }
     }
 }
