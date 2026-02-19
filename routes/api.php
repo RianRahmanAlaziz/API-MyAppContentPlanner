@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminWorkspaceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentApprovalController;
 use App\Http\Controllers\ContentChecklistItemController;
@@ -25,6 +26,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('admin')->middleware('admin')->group(function () {
         Route::prefix('users')->controller(AdminUserController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::put('{id}', 'update');
+            Route::delete('{id}', 'destroy');
+        });
+        Route::prefix('workspace')->controller(AdminWorkspaceController::class)->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
             Route::put('{id}', 'update');
