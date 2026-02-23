@@ -52,6 +52,17 @@ class WorkspaceMemberController extends Controller
             'role' => $data['role'],
         ]);
 
+        audit()->log(
+            request: $request,
+            event: 'membership.added',
+            entityType: 'membership',
+            entityId: (int) $member->id, // kalau table membership ada id
+            workspaceId: $workspace->id,
+            before: null,
+            after: $member->fresh()->toArray(),
+            message: "Member added: {$user->email} as {$member->role}"
+        );
+
         return response()->json([
             'message' => 'Member added',
             'data' => [
@@ -80,8 +91,22 @@ class WorkspaceMemberController extends Controller
         // tidak boleh ubah role owner sendiri via table membership (optional rule)
         abort_if($user->id === $workspace->owner_id, 422, 'Tidak bisa mengubah role owner.');
 
+        $before = $member->toArray();
         $member->role = $data['role'];
         $member->save();
+        $after = $member->fresh()->toArray();
+
+        audit()->log(
+            request: $request,
+            event: 'membership.role_changed',
+            entityType: 'membership',
+            entityId: (int) $member->id,
+            workspaceId: $workspace->id,
+            before: $before,
+            after: $after,
+            message: "Role changed: {$user->email} {$before['role']} → {$after['role']}",
+            meta: ['from_role' => $before['role'] ?? null, 'to_role' => $after['role'] ?? null]
+        );
 
         return response()->json(['message' => 'Role updated']);
     }
@@ -92,11 +117,27 @@ class WorkspaceMemberController extends Controller
         // tidak boleh remove owner
         abort_if($user->id === $workspace->owner_id, 422, 'Tidak bisa menghapus owner dari workspace.');
 
-        $deleted = WorkspaceMember::where('workspace_id', $workspace->id)
+        $member = WorkspaceMember::where('workspace_id', $workspace->id)
             ->where('user_id', $user->id)
-            ->delete();
+            ->first();
 
-        abort_unless($deleted, 404);
+        abort_unless($member, 404);
+
+        $before = $member->toArray();
+
+        $member->delete();
+
+        audit()->log(
+            request: $request,
+            event: 'membership.removed',
+            entityType: 'membership',
+            entityId: (int) $before['id'], // id membership
+            workspaceId: $workspace->id,
+            before: $before,
+            after: null,
+            message: "Member removed: {$user->email} (role: {$before['role']})",
+            meta: ['role' => $before['role'] ?? null]
+        );
 
         return response()->json(['message' => 'Member removed']);
     }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAuditLogController;
+use App\Http\Controllers\admin\AdminContentController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminWorkspaceController;
 use App\Http\Controllers\Admin\AdminWorkspaceMemberController;
@@ -30,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     | Admin
     */
     Route::prefix('admin')->middleware('admin')->group(function () {
+        Route::get('audit-logs', [AdminAuditLogController::class, 'index']);
         /*
         | User
         */
@@ -54,9 +57,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('workspace')->controller(AdminWorkspaceMemberController::class)->group(function () {
             Route::get('/{workspace}/members', 'index');
             Route::post('/{workspace}/members', 'store');
-            Route::put('{workspace}/members/{user}', 'update');
+            Route::put('{workspace}/members/{user}', 'updateRole');
             Route::delete('{workspace}/members/{user}', 'destroy');
             Route::post('/{workspace}/transfer-owner', 'transferOwner');
+        });
+
+        Route::prefix('contents')->controller(AdminContentController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::get('/{content}', 'show');
+            Route::put('/{content}', 'update');
+            Route::delete('/{content}', 'destroy');
+
+            Route::patch('/{content}/move', 'move');
         });
     });
 

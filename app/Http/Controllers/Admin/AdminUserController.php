@@ -12,12 +12,18 @@ class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query();
+        $query = User::query()->select('id', 'name', 'email', 'role');
+
         if ($request->has('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%");
         }
-        $users = $query->paginate(10);
+        if ($request->boolean('only_unassigned')) {
+            $query->whereDoesntHave('workspaceMemberships');
+            // atau relasi: workspaces / members sesuai model kamu
+        }
+
+        $users = $query->orderBy('name')->paginate(10);
 
         return response()->json([
             'message' => 'Data semua user berhasil diambil',
@@ -43,6 +49,18 @@ class AdminUserController extends Controller
             }
 
             $user = User::create($validatedData);
+
+            // AUDIT: user.created
+            audit()->log(
+                request: $request,
+                event: 'user.created',
+                entityType: 'user',
+                entityId: (int) $user->id,
+                workspaceId: null,
+                before: null,
+                after: $user->fresh()->only(['id', 'name', 'email', 'role']),
+                message: "User created: {$user->email} ({$user->role})"
+            );
 
             return response()->json([
                 'success' => true,
@@ -81,7 +99,29 @@ class AdminUserController extends Controller
             }
 
             $user = User::findOrFail($id);
+            $before = $user->only(['id', 'name', 'email', 'role']);
             $user->update($validatedData);
+            $after = $user->fresh()->only(['id', 'name', 'email', 'role']);
+
+            // AUDIT: user.updated
+            audit()->log(
+                request: $request,
+                event: 'user.updated',
+                entityType: 'user',
+                entityId: (int) $user->id,
+                workspaceId: null,
+                before: $before,
+                after: $after,
+                message: "User updated: {$user->email}",
+                meta: [
+                    'changes' => [
+                        'name'  => ($before['name'] ?? null) !== ($after['name'] ?? null),
+                        'email' => ($before['email'] ?? null) !== ($after['email'] ?? null),
+                        'role'  => ($before['role'] ?? null) !== ($after['role'] ?? null),
+                        'password' => $request->filled('password'),
+                    ],
+                ]
+            );
 
             return response()->json([
                 'success' => true,
@@ -104,7 +144,7 @@ class AdminUserController extends Controller
     }
 
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         try {
             $user = User::find($id);
@@ -115,9 +155,20 @@ class AdminUserController extends Controller
                     'message' => 'User tidak ditemukan.'
                 ], 404);
             }
-
+            $before = $user->only(['id', 'name', 'email', 'role']);
             $user->delete();
 
+            // AUDIT: user.deleted
+            audit()->log(
+                request: $request,
+                event: 'user.deleted',
+                entityType: 'user',
+                entityId: (int) $before['id'],
+                workspaceId: null,
+                before: $before,
+                after: null,
+                message: "User deleted: {$before['email']} ({$before['role']})"
+            );
             return response()->json([
                 'success' => true,
                 'message' => 'User berhasil dihapus.'
